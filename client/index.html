@@ -1,0 +1,73 @@
+<html>
+
+<head>
+    <script type="text/javascript">
+        const ws = new WebSocket('ws://localhost:8080');
+        ws.binaryType = "arraybuffer";
+        // Browser WebSockets have slightly different syntax than `ws`.
+        // Instead of EventEmitter syntax `on('open')`, you assign a callback
+        // to the `onopen` property.
+        ws.onopen = function () {
+            document.querySelector('#send').disabled = false;
+            document.querySelector('#send_arraybuffer').disabled = false;
+            document.querySelector('#send_json').disabled = false;
+
+            // SEND STRING
+            document.querySelector('#send').addEventListener('click', function () {
+                ws.send(document.querySelector('#message').value);
+            });
+
+            // SEND JSON
+            document.querySelector('#send_json').addEventListener('click', function () {
+                ws.send(JSON.stringify({ some: 'value' }));
+            });
+
+            // SEND BINARY TYPE (arrayBuffer)
+            document.querySelector('#send_arraybuffer').addEventListener('click', function () {
+                const array = new Float32Array(5);
+                for (var i = 0; i < array.length; ++i) {
+                    array[i] = i / 2;
+                }
+                ws.send(array);
+            });
+        };
+
+        ws.onmessage = function (event) {
+            console.log(event);
+
+            if (typeof event.data === 'string') {
+                var returnString = '';
+                try { // for JSON
+                    returnString = JSON.parse(event.data);
+                    returnString = JSON.stringify(returnString); // for display
+                    console.log('Received JSON string');
+                } catch (e) { // non-JSON strings
+                    returnString = event.data
+                    console.log('Received standard string');
+                }
+                document.querySelector('#messages').innerHTML += `<div>String: ${returnString}</div>`;
+            }
+
+            if (event.data instanceof ArrayBuffer) {
+                var buffer = event.data;
+                var farray = new Float32Array(buffer);
+                console.log('Received arraybuffer:', buffer);
+                document.querySelector('#messages').innerHTML += `<div>ArrayBuffer: ${farray.join(',')}</div>`;
+            }
+        };
+    </script>
+</head>
+
+<body>
+    <h1>Websocket String and ArrayBuffer send/rec</h1>
+    <div>
+        <input id="message" placeholder="Message">
+        <button id="send" disabled="true">Send</button>
+        <button id="send_arraybuffer" disabled="true">Send ArrayBuffer</button>
+        <button id="send_json" disabled="true">Send JSON</button>
+    </div>
+    <div id="messages">
+    </div>
+</body>
+
+</html>
