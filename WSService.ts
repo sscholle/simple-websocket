@@ -1,15 +1,25 @@
-import WebSocket from 'ws';
+import WebSocket, { MessageEvent } from 'ws';
 import { SimpleService } from './server';
 
+type WSServiceMessageCallback = (instance: WSService, event: MessageEvent) => void;
+
+/**
+ * WSService
+ * a simple WebSocker server
+ */
 class WSService extends SimpleService {
   sockets: WebSocket[];
   server: WebSocket.Server;
   port: number;
+  binaryType: string;
+  onMessageCallback: WSServiceMessageCallback;
 
-  constructor(name = 'WSService', port = 8080) {
+  constructor(name: string = 'WSService', port: number = 8080, binaryType: string = 'blob', onMessage: WSServiceMessageCallback) {
     super(name);
     this.port = port;
+    this.binaryType = binaryType;// Note BinaryType of Receiver and Sender must be the same
     this.sockets = [];
+    this.onMessageCallback = onMessage ? onMessage : () => null;
     this.server = new WebSocket.Server({
       port
     });
@@ -18,36 +28,13 @@ class WSService extends SimpleService {
   /**
    * start the wesocket service
    * implement callbacks for events
-   * @todo implement robust content type checking for received messages
    */
   start() {
     this.server.on('connection', (socket) => {
+      socket.binaryType = this.binaryType;
       this.sockets.push(socket);
 
-      socket.binaryType = 'arraybuffer';
-      // When you receive a message, send that message to every socket.
-      socket.on('message', (data) => {
-
-        // BINARY
-        if (data instanceof ArrayBuffer) {
-          var buffer = data;
-          console.log('Received arraybuffer');
-        }
-
-        // STRINGS
-        if (typeof data === 'string') {
-          //create a JSON object
-          try {
-            var jsonObject = JSON.parse(data);
-            console.log('Received JSON string');
-          } catch (e) {
-            console.log('Received standard string');
-          }
-          console.log('Received data string');
-        }
-
-        this.sockets.forEach(s => s.send(data));
-      });
+      socket.onmessage = (event) => this.onMessageCallback(this, event);
 
       // When a socket closes, or disconnects, remove it from the array.
       socket.on('close', () => {
@@ -55,8 +42,20 @@ class WSService extends SimpleService {
       });
     });
 
-    console.log('WSServer Started on ', this.port);
+    console.log(this.name, this.port);
     return true;
+  }
+
+  broadcast(data: WebSocket.Data) {
+    this.sockets.forEach(s => s.send(data));
+  }
+
+  /**
+   * When a Message event is received
+   * @param callback the function to call
+   */
+  onMessage(callback: WSServiceMessageCallback) {
+    this.onMessageCallback = callback;
   }
 
   stop() {

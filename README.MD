@@ -4,8 +4,9 @@
 a very basic demo that leverages simple Websocket APIs to send/receive Strings, JSON and ArrayBuffers
 
 ## Requirements
+- Node.js
 - TypeScript compiler (tsc)
-
+- Modern Browser
 ## Run Server
 `npm install && npm start`
 

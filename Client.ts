@@ -1,5 +1,4 @@
 import http from 'http';
-import fs from 'fs';
 import { SimpleService } from './server';
 
 /**
@@ -9,12 +8,16 @@ import { SimpleService } from './server';
 class ClientService extends SimpleService {
     service: http.Server;
     port: number;
+    onRequestCallback: (request: http.IncomingMessage, response: http.ServerResponse) => void;
 
-    constructor(name = 'Client', port = 3000) {
+    constructor(name = 'Client', port = 3000, onRequest = (request: http.IncomingMessage, response: http.ServerResponse) => response.end('empty')) {
         super(name);
         this.port = port;
+        this.onRequestCallback = onRequest;
         this.service = http.createServer(
-            (req, res) => res.end(fs.readFileSync('./client/index.html').toString())
+            (req, res) => {
+                this.onRequestCallback(req, res);
+            }
         );
     }
 

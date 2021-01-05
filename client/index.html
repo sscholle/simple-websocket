@@ -3,13 +3,14 @@
 <head>
     <script type="text/javascript">
         const ws = new WebSocket('ws://localhost:8080');
-        ws.binaryType = "arraybuffer";
+        ws.binaryType = "blob";// determines how the binary data is received
+
         // Browser WebSockets have slightly different syntax than `ws`.
         // Instead of EventEmitter syntax `on('open')`, you assign a callback
         // to the `onopen` property.
         ws.onopen = function () {
             document.querySelector('#send').disabled = false;
-            document.querySelector('#send_arraybuffer').disabled = false;
+            document.querySelector('#send_binary').disabled = false;
             document.querySelector('#send_json').disabled = false;
 
             // SEND STRING
@@ -22,9 +23,9 @@
                 ws.send(JSON.stringify({ some: 'value' }));
             });
 
-            // SEND BINARY TYPE (arrayBuffer)
-            document.querySelector('#send_arraybuffer').addEventListener('click', function () {
-                const array = new Float32Array(5);
+            // Send as Blob/ArrayBuffer (binary)
+            document.querySelector('#send_binary').addEventListener('click', function () {
+                const array = new Float32Array(2);
                 for (var i = 0; i < array.length; ++i) {
                     array[i] = i / 2;
                 }
@@ -33,8 +34,6 @@
         };
 
         ws.onmessage = function (event) {
-            console.log(event);
-
             if (typeof event.data === 'string') {
                 var returnString = '';
                 try { // for JSON
@@ -45,16 +44,45 @@
                     returnString = event.data
                     console.log('Received standard string');
                 }
-                document.querySelector('#messages').innerHTML += `<div>String: ${returnString}</div>`;
+                document.querySelector('#messages').innerHTML += `<div>Received String: ${returnString}</div>`;
             }
 
             if (event.data instanceof ArrayBuffer) {
                 var buffer = event.data;
                 var farray = new Float32Array(buffer);
                 console.log('Received arraybuffer:', buffer);
-                document.querySelector('#messages').innerHTML += `<div>ArrayBuffer: ${farray.join(',')}</div>`;
+                document.querySelector('#messages').innerHTML += `<div>Received ArrayBuffer: ${farray.join(',')}</div>`;
+            }
+
+            if (event.data instanceof Blob) {
+                // we use a FileReader to convert a blob to an arraybuffer (hacky)
+                var fileReader = new FileReader();
+                fileReader.onload = function(loadevent) {
+                    var arrayBuffer = loadevent.target.result;
+                    // then we convert back to the expected Typed Array format
+                    var farray = new Float32Array(arrayBuffer);
+                    console.log('Received blob:', arrayBuffer);
+                    document.querySelector('#messages').innerHTML += `<div>Received Blob: ${farray.join(',')}</div>`;
+                };
+                fileReader.readAsArrayBuffer(event.data);
             }
         };
+
+        ws.onclose = function() {
+            // cleanup here
+            console.log('Websocket Client closed');
+        };
+
+
+        // type = blob|arraybuffer
+        function setBinaryType(type){
+            console.log('binary type set as ', type);
+            ws.binaryType = type;
+        }
+
+        function binaryTypeChangeHandler(select){
+            setBinaryType(select.value);
+        }
     </script>
 </head>
 
@@ -63,8 +91,9 @@
     <div>
         <input id="message" placeholder="Message">
         <button id="send" disabled="true">Send</button>
-        <button id="send_arraybuffer" disabled="true">Send ArrayBuffer</button>
+        <button id="send_binary" disabled="true">Send Binary (blob/arraybuffer)</button>
         <button id="send_json" disabled="true">Send JSON</button>
+        <select onchange="binaryTypeChangeHandler(this)"><option>blob</option><option>arraybuffer</option></select>
     </div>
     <div id="messages">
     </div>
