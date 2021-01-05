@@ -1,22 +1,41 @@
 import http from 'http';
 import fs from 'fs';
+import { SimpleService } from './server';
 
-import { IService } from './server';
+/**
+ * Client
+ * a simple implementation for serving a client web page
+ */
+class ClientService extends SimpleService {
+    service: http.Server;
+    port: number;
 
-class Client implements IService {
-    server: http.Server;
-
-    constructor() {
-        this.server = http.createServer(
+    constructor(name = 'Client', port = 3000) {
+        super(name);
+        this.port = port;
+        this.service = http.createServer(
             (req, res) => res.end(fs.readFileSync('./client/index.html').toString())
         );
     }
 
+    /**
+     * start this web service
+     * @todo implement promises
+     */
     start() {
-        this.server.listen(3000);
-        console.log('Client Started on ', 3000);
+        this.service.listen(this.port);
+        console.log('Client Started on ', this.port);
+        return true;
+    }
+
+    /**
+     * stop this web service
+     * @todo implement error handling
+     */
+    stop() {
+        this.service.close();
         return true;
     }
 }
 
-export default Client;
+export default ClientService;

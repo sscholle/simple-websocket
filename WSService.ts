@@ -1,16 +1,25 @@
 import WebSocket from 'ws';
-import { IService } from './server';
+import { SimpleService } from './server';
 
-class WSService implements IService {
+class WSService extends SimpleService {
   sockets: WebSocket[];
   server: WebSocket.Server;
-  constructor() {
+  port: number;
+
+  constructor(name = 'WSService', port = 8080) {
+    super(name);
+    this.port = port;
     this.sockets = [];
     this.server = new WebSocket.Server({
-      port: 8080
+      port
     });
   }
 
+  /**
+   * start the wesocket service
+   * implement callbacks for events
+   * @todo implement robust content type checking for received messages
+   */
   start() {
     this.server.on('connection', (socket) => {
       this.sockets.push(socket);
@@ -46,7 +55,12 @@ class WSService implements IService {
       });
     });
 
-    console.log('WSServer Started on ', 8080);
+    console.log('WSServer Started on ', this.port);
+    return true;
+  }
+
+  stop() {
+    this.server.close();
     return true;
   }
 }
