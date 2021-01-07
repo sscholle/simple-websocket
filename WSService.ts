@@ -46,16 +46,12 @@ class WSService extends SimpleService {
     return true;
   }
 
+  /**
+   * Send Data to all currently conected WS Clients
+   * @param data data to be sent
+   */
   broadcast(data: WebSocket.Data) {
     this.sockets.forEach(s => s.send(data));
-  }
-
-  /**
-   * When a Message event is received
-   * @param callback the function to call
-   */
-  onMessage(callback: WSServiceMessageCallback) {
-    this.onMessageCallback = callback;
   }
 
   stop() {

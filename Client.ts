@@ -1,6 +1,8 @@
 import http from 'http';
 import { SimpleService } from './server';
 
+type ClientServiceRequestCallback = (request: http.IncomingMessage, response: http.ServerResponse) => void;
+
 /**
  * Client
  * a simple implementation for serving a client web page
@@ -8,12 +10,12 @@ import { SimpleService } from './server';
 class ClientService extends SimpleService {
     service: http.Server;
     port: number;
-    onRequestCallback: (request: http.IncomingMessage, response: http.ServerResponse) => void;
+    onRequestCallback: ClientServiceRequestCallback;
 
     constructor(name = 'Client', port = 3000, onRequest = (request: http.IncomingMessage, response: http.ServerResponse) => response.end('empty')) {
         super(name);
         this.port = port;
-        this.onRequestCallback = onRequest;
+        this.onRequestCallback = onRequest ? onRequest : (req, res) => res.end();
         this.service = http.createServer(
             (req, res) => {
                 this.onRequestCallback(req, res);
@@ -27,7 +29,7 @@ class ClientService extends SimpleService {
      */
     start() {
         this.service.listen(this.port);
-        console.log('Client Started on ', this.port);
+        console.log(this.name, this.port);
         return true;
     }
 

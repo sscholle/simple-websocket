@@ -32,7 +32,7 @@ const websocketMessageProcessor = (wsService: WSService, event: MessageEvent) =>
         }
     }
 
-    // Releat the Message 100x times (just for fun)
+    // Repeat the Message 100x times (just for fun)
     // for (let index = 0; index < 100; index++) {
         wsService.broadcast(data);
     // }
@@ -45,6 +45,8 @@ const clientRequestHandler = (request, response) => {
         case 'GET':
             switch(request.url){
                 case '/':
+                    // Serves the Websocket Client that connects to the WS Server on 8080
+                    // @todo: use a templating engine to add in configured WS server IP/Port automatically
                     response.end(fs.readFileSync('./client/index.html'));
                     break;
                 default:
@@ -59,8 +61,9 @@ const clientRequestHandler = (request, response) => {
 };
 const WebClient = new Client('WebClient', 3000, clientRequestHandler);
 serv.add(WebClient);
-//serv.add(new SomeAPI());
+
+//serv.add(new SomeOtherAPI());
 
 serv.start();// starts all services in this server
 
-// only stop by closing node process
+// only stop server by closing node process
